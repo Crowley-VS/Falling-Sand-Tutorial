@@ -45,14 +45,88 @@ export class Sand extends Particle {
     }
 
     swap(other) {
-        // TODO make sand fall under the water
+        // Make sand fall below water
+        return other.type == "water";
     }
 
     update(row, col) {
-        // TODO update sand
+        // Fall due to gravity
+        let newRow = row + 1;
+
+        // If nothing below move down
+        if (!moveParticle(row, col, newRow, col)) {
+            // Try to move left
+            if (!moveParticle(row, col, newRow, col - 1, this.swap)) {
+                moveParticle(row, col, newRow, col + 1, this.swap)
+            }
+        }
     }
 }
 
+export class Water extends Particle {
+    constructor() {
+        super();
+        this.color = "blue";
+        this.type = "water";
+    }
+
+    update(row, col) {
+        // 👇 Put the following code here 👇
+        // Make water turn dirt into grass when it touches it
+        if (getParticle(row + 1, col)?.type == "dirt") {
+            // Remove water and change dirt to grass
+            setParticle(row + 1, col, new Grass());
+            setParticle(row, col, null);
+            return;
+        }
+        // 👆 Put the following code here 👆
+
+        // Try to move down
+        if (getRandomInt(0, 2) && !getParticle(row + 1, col)) {
+            moveParticle(row, col, row + 1, col, this.swap);
+        }
+
+        // Move left or right
+        if (getRandomInt(0, 1) && !getParticle(row, col + 1)) {
+            moveParticle(row, col, row, col + 1, this.swap);
+        }
+        else if (!getParticle(row, col - 1)) {
+            moveParticle(row, col, row, col - 1, this.swap);
+        }
+    }
+}
+
+/**
+ * Dirt particle
+ */
+export class Dirt extends Sand {
+    constructor() {
+        super(); // Call the constructor of the Sand class
+        this.color = "brown";
+        this.type = "dirt";
+    }
+    // No update or swap needed! It inherits from Sand.
+}
+
+export class Grass extends Sand {
+    constructor() {
+        super(); // Call the constructor of the Sand class
+        this.color = "green";
+        this.type = "grass";
+    }
+    // No update or swap needed! It inherits from Sand.
+}
+/**
+ * Rock particle
+ */
+export class Stone extends Particle {
+    constructor() {
+        super(); // Call the constructor of the Particle class
+        this.color = "gray";
+        this.type = "stone";
+    }
+    // No update or swap needed!
+}
 /**
  * Create particle based on dropdown name
  * 
@@ -62,6 +136,12 @@ export class Sand extends Particle {
 export function checkParticleType(value) {
     if (value == "Sand") {
         return new Sand();
-    } 
-    // TODO create new particles
+    } else if (value == "Water") {
+        return new Water();
+    } else if (value == "Stone") { // Add this
+        return new Stone();
+    } else if (value == "Dirt") {   // Add this
+        return new Dirt();
+    }
+    return null;
 }

@@ -10,13 +10,14 @@ const speedOutput = document.getElementById("speed");
 const brushSlider = document.getElementById("brushRange");
 const brushOutput = document.getElementById("brushSize");
 
+
 // When you change a slider value it updates its corresponding label
 speedOutput.innerHTML = speedSlider.value;
-speedSlider.oninput = function() {
+speedSlider.oninput = function () {
     speedOutput.innerHTML = this.value;
 }
 brushOutput.innerHTML = brushSlider.value;
-brushSlider.oninput = function() {
+brushSlider.oninput = function () {
     brushOutput.innerHTML = this.value;
 }
 
@@ -33,12 +34,12 @@ const canvasWidth = canvas.width;
 
 const eachSize = 10;
 
-const numberOfRows = Math.floor(canvasHeight/eachSize);
-const numberOfColumns = Math.floor(canvasWidth/eachSize);
+const numberOfRows = Math.floor(canvasHeight / eachSize);
+const numberOfColumns = Math.floor(canvasWidth / eachSize);
 
 // Create particle grid
 let grid = new Array(numberOfRows);
-for(let i = 0; i < grid.length; i++){
+for (let i = 0; i < grid.length; i++) {
     grid[i] = new Array(numberOfColumns);
 }
 
@@ -48,9 +49,9 @@ for(let i = 0; i < grid.length; i++){
  * @returns {{row: number, col: number}} coordinates
  */
 export function getRandomLocation() {
-    const row = getRandomInt(0, grid.length-1);
-    const col = getRandomInt(0, grid[0].length-1);
-    return {row, col};
+    const row = getRandomInt(0, grid.length - 1);
+    const col = getRandomInt(0, grid[0].length - 1);
+    return { row, col };
 }
 
 /**
@@ -92,20 +93,20 @@ export function setParticle(row, col, particle) {
 export function createParticle(mousePosition) {
     // Get the bounds of the canvas
     const rect = canvas.getBoundingClientRect();
-    
+
     // Shift the mouse coordinates to be based on the canvas coordinates
     const y = mousePosition.clientY - rect.top;
     const x = mousePosition.clientX - rect.left;
-    
+
     // Scale the coordinates to align with the grid
     const row = Math.floor(y / eachSize);
     const col = Math.floor(x / eachSize);
-    
+
     // Get the particle type
     const particleType = document.getElementById("particle");
     const value = particleType.value;
     const brushSize = parseInt(brushSlider.value);
-    
+
     const brushSpread = (row, col, size) => {
         if (!checkBounds(row, col)) {
             return;
@@ -116,10 +117,10 @@ export function createParticle(mousePosition) {
         // Recursion to make brush a circle (size is radius)
         if (size > 1) {
             size -= 1;
-            brushSpread(row+1, col, size);
-            brushSpread(row-1, col, size);
-            brushSpread(row, col+1, size);
-            brushSpread(row, col-1, size);
+            brushSpread(row + 1, col, size);
+            brushSpread(row - 1, col, size);
+            brushSpread(row, col + 1, size);
+            brushSpread(row, col - 1, size);
         }
     }
 
@@ -135,7 +136,7 @@ let mousePosition = null;
  * @returns {isDragging: boolean, mousePosition: {clientX: number, clientY: number}}
  */
 export function getMouse() {
-    return {isDragging, mousePosition};
+    return { isDragging, mousePosition };
 }
 
 /**
@@ -144,7 +145,7 @@ export function getMouse() {
 export function setUpMouseListeners() {
     canvas.addEventListener("mousedown", (event) => {
         isDragging = true;
-        mousePosition = {clientX: event.clientX, clientY: event.clientY};
+        mousePosition = { clientX: event.clientX, clientY: event.clientY };
     });
     canvas.addEventListener("mousemove", (event) => {
         mousePosition = event;
@@ -173,10 +174,8 @@ export function clearGrid() {
  * @returns {boolean}
  */
 export function checkBounds(row, col) {
-    // TODO make sure row and col are within the grid
-    return true;
+    return row < grid.length && row >= 0 && col < grid[0].length && col >= 0;
 }
-
 /**
  * Tries to move a particle from (row, col) to (newRow, newCol)
  * Checks to make sure both coordinates are valid and that their
@@ -191,10 +190,30 @@ export function checkBounds(row, col) {
  * @returns {boolean} If the particle was moved or not
  */
 export function moveParticle(row, col, newRow, newCol, swap) {
-    // TODO move a particle from (row, col) to (newRow, newCol)
+    if (!checkBounds(row, col) || !checkBounds(newRow, newCol)) {
+        return false;
+    }
+
+    if (getParticle(newRow, newCol)) {
+        // 👇 Add this check and swap logic 👇
+        // If there is a particle but we can swap then flip the particles
+        if (swap && swap(getParticle(newRow, newCol))) {
+            const temp = grid[newRow][newCol];
+            grid[newRow][newCol] = grid[row][col];
+            grid[row][col] = temp;
+            return true;
+        }
+        // If we can't swap then don't move
+        else {
+            return false;
+        }
+        // 👆 Add this check and swap logic 👆
+    }
+
+    grid[newRow][newCol] = grid[row][col];
+    grid[row][col] = null;
     return true;
 }
-
 /**
  * Draws all particles
  */
@@ -205,7 +224,15 @@ export function redraw() {
     // Loop through all elements in the grid
     for (let row = 0; row < grid.length; row++) {
         for (let col = 0; col < grid[0].length; col++) {
-            // TODO draw particles to screen
+            const particle = grid[row][col];
+
+            // Check if there is a particle at (row, col). (null == false)
+            if (particle) {
+                // Get particle color
+                ctx.fillStyle = particle.color;
+                // Draw particle (multiple by eachSize to scale it from grid coordinates to pixels)
+                ctx.fillRect(col * eachSize, row * eachSize, eachSize, eachSize);
+            }
         }
     }
 }
